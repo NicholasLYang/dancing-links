@@ -21,7 +21,7 @@ typedef struct SolutionList {
 } SolutionList;
 
 ColumnObj* add_column(ColumnObj** arena, size_t size, char* name);
-DataObj* add_data_obj(DataObj** arena, DataObj* up, DataObj* down, ColumnObj* col);
+DataObj* add_data_obj(DataObj** arena, ColumnObj* col);
 void print_all_columns(ColumnObj* header);
 void print_column(ColumnObj* col);
 void print_row(DataObj* row);
@@ -42,7 +42,6 @@ void run_example_set_cover() {
   header->left = header;
   header->right = header;
   colArena += 1;
-
   ColumnObj* g = add_column(&colArena, 2, "G");
   ColumnObj* f = add_column(&colArena, 2, "F");
   ColumnObj* e = add_column(&colArena, 2, "E");
@@ -51,48 +50,49 @@ void run_example_set_cover() {
   ColumnObj* b = add_column(&colArena, 2, "B");
   ColumnObj* a = add_column(&colArena, 2, "A");
   DataObj* obj = malloc(sizeof(DataObj) * 23);
-
   add_spacer(&obj, NULL, obj + 3); // Spacer
   // First row
-  DataObj* r1c = add_data_obj(&obj, (DataObj*) c, NULL, c);
-  DataObj* r1e = add_data_obj(&obj, (DataObj*) e, NULL, e);
-  DataObj* r1f = add_data_obj(&obj, (DataObj*) f, NULL, f);
-
+  DataObj* r1c = add_data_obj(&obj, c);
+  add_data_obj(&obj, e);
+  add_data_obj(&obj, f);
   add_spacer(&obj, r1c, obj + 3); // Spacer
   // Second row
-  DataObj* r2a = add_data_obj(&obj, (DataObj*) a, NULL, a);
-  DataObj* r2d = add_data_obj(&obj, (DataObj*) d, NULL, d);
-  DataObj* r2g = add_data_obj(&obj, (DataObj*) g, NULL, g);
+  DataObj* r2a = add_data_obj(&obj, a);
+  add_data_obj(&obj, d);
+  add_data_obj(&obj, g);
 
   add_spacer(&obj, r2a, obj + 3); // Spacer
 
   // Third row
-  DataObj* r3b = add_data_obj(&obj, (DataObj*) b, NULL, b);
-  /*DataObj* r3c = */add_data_obj(&obj, r1c, (DataObj*) c, c);
-  /*DataObj* r3f = */add_data_obj(&obj, r1f, (DataObj*) f, f);
+  DataObj* r3b = add_data_obj(&obj, b);
+  add_data_obj(&obj, c);
+  add_data_obj(&obj, f);
 
   add_spacer(&obj, r3b, obj + 2); // Spacer
 
   // Fourth row
-  DataObj* r4a = add_data_obj(&obj, r2a, (DataObj*) a, a);
-  DataObj* r4d = add_data_obj(&obj, r2d, NULL, d);
+  DataObj* r4a = add_data_obj(&obj, a);
+  add_data_obj(&obj, d);
 
 add_spacer(&obj, r4a, obj + 2); // Spacer
 
   // Fifth row
-  DataObj* r5b = add_data_obj(&obj, r3b, (DataObj*) b, b);
-  DataObj* r5g = add_data_obj(&obj, r2g, NULL, g);
+  DataObj* r5b = add_data_obj(&obj, b);
+  add_data_obj(&obj, g);
 
-add_spacer(&obj, r5b, obj + 3); // Spacer
+  add_spacer(&obj, r5b, obj + 3); // Spacer
   // Sixth row
-  DataObj* r6d = add_data_obj(&obj, r4d, (DataObj*) d, d);
-  /*DataObj* r6e = */add_data_obj(&obj, r1e, (DataObj*) e, e);
-  /*DataObj* r6g = */add_data_obj(&obj, r5g, (DataObj*) g, g);
+  DataObj* r6d = add_data_obj(&obj, d);
+  /*DataObj* r6e = */add_data_obj(&obj, e);
+  /*DataObj* r6g = */add_data_obj(&obj, g);
 
   add_spacer(&obj, r6d, NULL); // Spacer
 
   solve(header, NULL);
 }
+
+// Gets the column for a p_ij node
+#define GET_P_COL(i, j) (header + 1 + ((i) * 9) + (j))
 
 ColumnObj* init_sudoku_columns() {
   ColumnObj* colArena = malloc(sizeof(ColumnObj) * 325);
@@ -102,11 +102,20 @@ ColumnObj* init_sudoku_columns() {
   header->left = header;
   header->right = header;
   colArena += 1;
-  for (char x = 0; x < 9; x++) {
+  for (char i = 0; i < 9; i++) {
+    for (char j = 0; j < 9; j++) {
+      char* name = malloc(3);
+      name[0] = 'p';
+      name[1] = i + '0';
+      name[2] = j + '0';
+      add_column(&colArena, 0, name);
+    }
+  }
+  for (char i = 0; i < 9; i++) {
     for (char k = 1; k < 10; k++) {
       char* name = malloc(3);
-      name[0] = 'b';
-      name[1] = x + '0';
+      name[0] = 'r';
+      name[1] = i + '0';
       name[2] = k + '0';
       add_column(&colArena, 0, name);
     }
@@ -120,21 +129,12 @@ ColumnObj* init_sudoku_columns() {
       add_column(&colArena, 0, name);
     }
   }
-  for (char i = 0; i < 9; i++) {
+    for (char x = 0; x < 9; x++) {
     for (char k = 1; k < 10; k++) {
       char* name = malloc(3);
-      name[0] = 'r';
-      name[1] = i + '0';
+      name[0] = 'b';
+      name[1] = x + '0';
       name[2] = k + '0';
-      add_column(&colArena, 0, name);
-    }
-  }
-  for (char i = 0; i < 9; i++) {
-    for (char j = 0; j < 9; j++) {
-      char* name = malloc(3);
-      name[0] = 'p';
-      name[1] = i + '0';
-      name[2] = j + '0';
       add_column(&colArena, 0, name);
     }
   }
@@ -143,13 +143,11 @@ ColumnObj* init_sudoku_columns() {
   for (char i = 0; i < 9; i++) {
     for (char j = 0; j < 9; j++) {
       for (char k = 1; k < 10; k++) {
-	node_count = node_count + 5;
+	add_data_obj(&nodeArena, GET_P_COL(i, j)); // pij
       }
     }
   }
-  
-  printf("NODE COUNT: %i\n", node_count);
-  //  print_all_columns(header);
+
   return header;
 }
 
@@ -165,6 +163,8 @@ ColumnObj* add_column(ColumnObj** arena, size_t size, char* name) {
   obj->right->left = obj;
   obj->size = size;
   obj->name = name;
+  obj->dataObj.up = (DataObj*)obj;
+  obj->dataObj.down = (DataObj*)obj;
   *arena += 1;
   return obj;
 }
@@ -172,16 +172,12 @@ ColumnObj* add_column(ColumnObj** arena, size_t size, char* name) {
 /*
  * All inputs can be null. If they aren't, we connect them both ways
  */
-DataObj* add_data_obj(DataObj** arena, DataObj* up, DataObj* down, ColumnObj* col) {
+DataObj* add_data_obj(DataObj** arena, ColumnObj* col) {
   DataObj* obj = *arena;
-  if (up != NULL) {
-    obj->up = up;
-    obj->up->down = obj;
-  }
-  if (down != NULL) {
-    obj->down = down;
-    obj->down->up = obj;
-  }
+  obj->up = col->dataObj.up;
+  obj->up->down = obj;
+  obj->down = (DataObj*)col;
+  col->dataObj.up = obj;
   obj->col = col;
   *arena += 1;
   return obj;
@@ -357,4 +353,5 @@ int solve(ColumnObj* header, SolutionList* solutionList) {
 
 int main() {
   init_sudoku_columns();
+  //run_example_set_cover();
 }
