@@ -32,6 +32,7 @@ void print_solutions(SolutionList* solutionList);
 void add_solution(SolutionList** solutionList, DataObj* obj);
 void run_example_set_cover(void);
 ColumnObj* init_sudoku_columns(void);
+DataObj* add_spacer(DataObj** arena, DataObj* up, DataObj* down);
 
 void run_example_set_cover() {
   ColumnObj* colArena = malloc(sizeof(ColumnObj) * 8);
@@ -51,51 +52,45 @@ void run_example_set_cover() {
   ColumnObj* a = add_column(&colArena, 2, "A");
   DataObj* obj = malloc(sizeof(DataObj) * 23);
 
-  add_data_obj(&obj, NULL, obj + 3, (ColumnObj*)1); // Spacer
+  add_spacer(&obj, NULL, obj + 3); // Spacer
   // First row
   DataObj* r1c = add_data_obj(&obj, (DataObj*) c, NULL, c);
   DataObj* r1e = add_data_obj(&obj, (DataObj*) e, NULL, e);
   DataObj* r1f = add_data_obj(&obj, (DataObj*) f, NULL, f);
 
-  add_data_obj(&obj, r1c, obj + 3, (ColumnObj*)3); // Spacer
+  add_spacer(&obj, r1c, obj + 3); // Spacer
   // Second row
   DataObj* r2a = add_data_obj(&obj, (DataObj*) a, NULL, a);
   DataObj* r2d = add_data_obj(&obj, (DataObj*) d, NULL, d);
   DataObj* r2g = add_data_obj(&obj, (DataObj*) g, NULL, g);
 
-  add_data_obj(&obj, r2a, obj + 3, (ColumnObj*)5); // Spacer
+  add_spacer(&obj, r2a, obj + 3); // Spacer
 
   // Third row
   DataObj* r3b = add_data_obj(&obj, (DataObj*) b, NULL, b);
   /*DataObj* r3c = */add_data_obj(&obj, r1c, (DataObj*) c, c);
   /*DataObj* r3f = */add_data_obj(&obj, r1f, (DataObj*) f, f);
 
-  add_data_obj(&obj, r3b, obj + 2, (ColumnObj*)7); // Spacer
+  add_spacer(&obj, r3b, obj + 2); // Spacer
 
   // Fourth row
   DataObj* r4a = add_data_obj(&obj, r2a, (DataObj*) a, a);
   DataObj* r4d = add_data_obj(&obj, r2d, NULL, d);
 
-  add_data_obj(&obj, r4a, obj + 2, (ColumnObj*)9); // Spacer
+add_spacer(&obj, r4a, obj + 2); // Spacer
 
   // Fifth row
   DataObj* r5b = add_data_obj(&obj, r3b, (DataObj*) b, b);
   DataObj* r5g = add_data_obj(&obj, r2g, NULL, g);
 
-  add_data_obj(&obj, r5b, obj + 3, (ColumnObj*)11); // Spacer
+add_spacer(&obj, r5b, obj + 3); // Spacer
   // Sixth row
   DataObj* r6d = add_data_obj(&obj, r4d, (DataObj*) d, d);
   /*DataObj* r6e = */add_data_obj(&obj, r1e, (DataObj*) e, e);
   /*DataObj* r6g = */add_data_obj(&obj, r5g, (DataObj*) g, g);
 
-  add_data_obj(&obj, r6d, NULL, (ColumnObj*)13); // Spacer
+  add_spacer(&obj, r6d, NULL); // Spacer
 
-  print_row(r1c);
-  print_row(r2a);
-  print_row(r3b);
-  print_row(r4a);
-  print_row(r5b);
-  print_row(r6d);
   solve(header, NULL);
 }
 
@@ -181,6 +176,15 @@ DataObj* add_data_obj(DataObj** arena, DataObj* up, DataObj* down, ColumnObj* co
 }
 
 
+DataObj* add_spacer(DataObj** arena, DataObj* up, DataObj* down) {
+  DataObj* spacer = *arena;
+  spacer->up = up;
+  spacer->down = down;
+  spacer->col = (ColumnObj*)1;
+  *arena += 1;
+  return spacer;
+}
+
 
 void print_all_columns(ColumnObj* header) {
   ColumnObj* p = header;
@@ -225,7 +229,6 @@ void cover_column(ColumnObj* col) {
     while (rowObj != obj) {
       // If this is a spacer node
       if ((int)rowObj->col & 1) {
-	printf("COL: %p\n",(void*) rowObj->col);
 	// Go to first elem in row
 	rowObj = rowObj->up;
       }
@@ -236,10 +239,6 @@ void cover_column(ColumnObj* col) {
       rowObj->up->down = rowObj->down;
       rowObj->col->size = rowObj->col->size - 1;
       rowObj += 1;
-      printf("\n\n");
-      printf("obj: %p\n", obj);
-      printf("row: %p\n", rowObj);
-      printf("\n\n");
     }
     obj = obj->down;
   }
