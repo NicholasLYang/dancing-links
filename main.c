@@ -99,6 +99,8 @@ ColumnObj* init_sudoku_columns() {
   ColumnObj* header = colArena;
   header->name = "Header";
   header->size = 0;
+  header->left = header;
+  header->right = header;
   colArena += 1;
   for (char x = 0; x < 9; x++) {
     for (char k = 1; k < 10; k++) {
@@ -136,8 +138,18 @@ ColumnObj* init_sudoku_columns() {
       add_column(&colArena, 0, name);
     }
   }
-
-  print_all_columns(header);
+  DataObj* nodeArena = malloc(sizeof(DataObj) * 3645);
+  int node_count = 0;
+  for (char i = 0; i < 9; i++) {
+    for (char j = 0; j < 9; j++) {
+      for (char k = 1; k < 10; k++) {
+	node_count = node_count + 5;
+      }
+    }
+  }
+  
+  printf("NODE COUNT: %i\n", node_count);
+  //  print_all_columns(header);
   return header;
 }
 
@@ -344,5 +356,5 @@ int solve(ColumnObj* header, SolutionList* solutionList) {
 }
 
 int main() {
-  run_example_set_cover();
+  init_sudoku_columns();
 }
