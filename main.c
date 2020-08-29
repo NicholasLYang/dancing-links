@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct DataObj {
   struct DataObj* up;
@@ -74,7 +75,7 @@ void run_example_set_cover() {
   DataObj* r4a = add_data_obj(&obj, a);
   add_data_obj(&obj, d);
 
-add_spacer(&obj, r4a, obj + 2); // Spacer
+  add_spacer(&obj, r4a, obj + 2); // Spacer
 
   // Fifth row
   DataObj* r5b = add_data_obj(&obj, b);
@@ -92,7 +93,14 @@ add_spacer(&obj, r4a, obj + 2); // Spacer
 }
 
 // Gets the column for a p_ij node
+// Starts by adding one for the header, then doing the ij calc
 #define GET_P_COL(i, j) (header + 1 + ((i) * 9) + (j))
+// Gets the column for a r_ik node
+// + 1 for the header, + 81 for the p columns, then k - 1
+// cause k starts  at 1
+#define GET_R_COL(i, k) (header + 1 + 81 + ((i) * 9) + (k) - 1)
+#define GET_C_COL(j, k) (header + 1 + 162 + ((j) * 9) + (k) - 1)
+#define GET_B_COL(x, k) (header + 1 + 243 + ((x) * 9) + (k) - 1)
 
 ColumnObj* init_sudoku_columns() {
   ColumnObj* colArena = malloc(sizeof(ColumnObj) * 325);
@@ -139,15 +147,20 @@ ColumnObj* init_sudoku_columns() {
     }
   }
   DataObj* nodeArena = malloc(sizeof(DataObj) * 3645);
-  int node_count = 0;
+  DataObj* prevRow = NULL;
   for (char i = 0; i < 9; i++) {
     for (char j = 0; j < 9; j++) {
       for (char k = 1; k < 10; k++) {
-	add_data_obj(&nodeArena, GET_P_COL(i, j)); // pij
+	char x = 3 * (i / 3) + (j / 3);
+	add_spacer(&nodeArena, prevRow, nodeArena + 4);
+	prevRow = add_data_obj(&nodeArena, GET_P_COL(i, j)); // p_ij
+	add_data_obj(&nodeArena, GET_R_COL(i, k)); // r_ik
+	add_data_obj(&nodeArena, GET_C_COL(j, k)); // c_jk
+	add_data_obj(&nodeArena, GET_B_COL(x, k));
       }
     }
   }
-
+  DataObj* spacer = add_spacer(&nodeArena, prevRow, NULL);
   return header;
 }
 
@@ -235,7 +248,7 @@ void cover_column(ColumnObj* col) {
   while (obj != (DataObj*)col) {
     DataObj* rowObj = obj + 1;
     while (rowObj != obj) {
-      // If this is a spacer node
+        // If this is a spacer node
       if ((int)rowObj->col & 1) {
 	// Go to first elem in row
 	rowObj = rowObj->up;
@@ -265,6 +278,7 @@ void uncover_column(ColumnObj* col) {
       if (rowObj == obj) {
 	break;
       }
+
       rowObj->col->size = rowObj->col->size + 1;
       rowObj->down->up = rowObj;
       rowObj->up->down = rowObj;
@@ -352,6 +366,6 @@ int solve(ColumnObj* header, SolutionList* solutionList) {
 }
 
 int main() {
-  init_sudoku_columns();
-  //run_example_set_cover();
+  ColumnObj* header = init_sudoku_columns();
+  solve(header, NULL);
 }
