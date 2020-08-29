@@ -2,4 +2,4 @@ CC=clang
 CFLAGS=-Weverything
 
 main:
-	$(CC) $(CFLAGS) main.c
+	$(CC) $(CFLAGS) main.c -o links
