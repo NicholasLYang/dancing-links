@@ -32,11 +32,11 @@ int solve(ColumnObj* header, SolutionList* solutionList);
 void print_solutions(SolutionList* solutionList);
 void add_solution(SolutionList** solutionList, DataObj* obj);
 void run_example_set_cover(void);
-ColumnObj* init_sudoku_columns(char* board);
+ColumnObj* init_sudoku_links(char* board);
 DataObj* add_spacer(DataObj** arena, DataObj* up, DataObj* down);
 
 void run_example_set_cover() {
-  ColumnObj* colArena = malloc(sizeof(ColumnObj) * 8);
+  ColumnObj* colArena = calloc(8, sizeof(ColumnObj));
   ColumnObj* header = colArena;
   header->name = "Header";
   header->size = 0;
@@ -50,7 +50,7 @@ void run_example_set_cover() {
   ColumnObj* c = add_column(&colArena, 2, "C");
   ColumnObj* b = add_column(&colArena, 2, "B");
   ColumnObj* a = add_column(&colArena, 2, "A");
-  DataObj* obj = malloc(sizeof(DataObj) * 23);
+  DataObj* obj = calloc(23, sizeof(DataObj));
   add_spacer(&obj, NULL, obj + 3); // Spacer
   // First row
   DataObj* r1c = add_data_obj(&obj, c);
@@ -104,8 +104,8 @@ void run_example_set_cover() {
 
 // Board is a 9x9 = 81 length array. If a block is 0, it is not filled in
 // otherwise it is
-ColumnObj* init_sudoku_columns(char* board) {
-  ColumnObj* colArena = malloc(sizeof(ColumnObj) * 325);
+ColumnObj* init_sudoku_links(char* board) {
+  ColumnObj* colArena = calloc(325, sizeof(ColumnObj));
   ColumnObj* header = colArena;
   header->name = "Header";
   header->size = 0;
@@ -148,7 +148,7 @@ ColumnObj* init_sudoku_columns(char* board) {
       add_column(&colArena, 0, name);
     }
   }
-  DataObj* nodeArena = malloc(sizeof(DataObj) * 3645);
+  DataObj* nodeArena = calloc(3645, sizeof(DataObj));
   DataObj* prevRow = NULL;
   for (char i = 0; i < 9; i++) {
     for (char j = 0; j < 9; j++) {
@@ -302,11 +302,9 @@ void uncover_column(ColumnObj* col) {
 }
 
 void add_solution(SolutionList** solutionList, DataObj* obj) {
-  SolutionList* newNode = malloc(sizeof(SolutionList));
+  SolutionList* newNode = calloc(1, sizeof(SolutionList));
   newNode->obj = obj;
-  if (*solutionList != NULL) {
-    newNode->next = *solutionList;
-  }
+  newNode->next = *solutionList;
   *solutionList = newNode;
 }
 
@@ -377,9 +375,8 @@ int solve(ColumnObj* header, SolutionList* solutionList) {
 }
 
 int main() {
-  //run_example_set_cover();
   char* board = calloc(81, sizeof(char));
   board[0] = 5;
-  ColumnObj* header = init_sudoku_columns(board);
+  ColumnObj* header = init_sudoku_links(board);
   solve(header, NULL);
 }
