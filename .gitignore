@@ -4,3 +4,8 @@ GRTAGS
 GTAGS
 links
 links.dSYM
+index.*
+.idea
+lib
+node_modules/
+.merlin

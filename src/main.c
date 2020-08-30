@@ -28,12 +28,14 @@ void print_column(ColumnObj* col);
 void print_row(DataObj* row);
 void cover_column(ColumnObj* col);
 void uncover_column(ColumnObj* col);
-int solve(ColumnObj* header, SolutionList* solutionList);
+int solve(ColumnObj* header, SolutionList** solutionList);
 void print_solutions(SolutionList* solutionList);
+void print_board(char* board);
+void write_solutions(SolutionList* solutionList, char* board);
 void add_solution(SolutionList** solutionList, DataObj* obj);
-void run_example_set_cover(void);
 ColumnObj* init_sudoku_links(char* board);
 DataObj* add_spacer(DataObj** arena, DataObj* up, DataObj* down);
+void run_example_set_cover(void);
 
 void run_example_set_cover() {
   ColumnObj* colArena = calloc(8, sizeof(ColumnObj));
@@ -91,6 +93,7 @@ void run_example_set_cover() {
 
   solve(header, NULL);
 }
+
 
 // Gets the column for a p_ij node
 // Starts by adding one for the header, then doing the ij calc
@@ -325,17 +328,63 @@ void print_solutions(SolutionList* solutionList) {
   }
 }
 
+void print_board(char* board) {
+  for (int i = 0; i < 81; i++) {
+    printf("%i", board[i]);
+    if ((i + 1) % 9 == 0) {
+      printf("\n");
+    }
+  }
+}
+
+void write_solutions(SolutionList* solutionList, char* board) {
+  while (solutionList != NULL) {
+    DataObj* obj = solutionList->obj;
+    // Initialize to 32 cause these are not valid values for i, j, value
+    // If I initialized to NULL aka 0, that would be a valid value for
+    // i and j
+    char i = 32;
+    char j = 32;
+    char value = 32;
+    do {
+      if (value != 32 && i != 32 && j != 32) {
+	board[(i * 9) + j] = value;
+	break;
+      }
+      switch (obj->col->name[0]) {
+	case 'p':
+	  i = obj->col->name[1] - '0';
+	  j = obj->col->name[2] - '0';
+	  break;
+	case 'r':
+	case 'c':
+	case 'b':
+	  value = obj->col->name[2] - '0';
+	  break;
+	default:
+	  fprintf(stderr, "Invalid format for column\n");
+      }
+      obj = obj + 1;
+      // If this is a spacer node
+      if ((int)obj->col & 1) {
+	// Go to first elem in row
+	obj = obj->up;
+      }
+    } while (obj != solutionList->obj);
+    solutionList = solutionList->next;
+  }
+}
+
 // Solved = 1
-int solve(ColumnObj* header, SolutionList* solutionList) {
+int solve(ColumnObj* header, SolutionList** solutionList) {
   if (header->right == header) {
-    print_solutions(solutionList);
     return 1;
   }
   ColumnObj* col = header->right;
   cover_column(col);
   DataObj* row = col->dataObj.down;
   while (row != (DataObj*)col) {
-    add_solution(&solutionList, row);
+    add_solution(solutionList, row);
     DataObj* rowObj = row + 1;
     while (rowObj != row) {
       // If this is a spacer node
@@ -352,8 +401,8 @@ int solve(ColumnObj* header, SolutionList* solutionList) {
     if (solve(header, solutionList) == 1) {
       return 1;
     }
-    SolutionList* old_sol = solutionList;
-    solutionList = solutionList->next;
+    SolutionList* old_sol = *solutionList;
+    *solutionList = (*solutionList)->next;
     free(old_sol);
     rowObj = rowObj - 1;
     while (rowObj != row) {
@@ -378,5 +427,8 @@ int main() {
   char* board = calloc(81, sizeof(char));
   board[0] = 5;
   ColumnObj* header = init_sudoku_links(board);
-  solve(header, NULL);
+  SolutionList* solutionList;
+  solve(header, &solutionList);
+  write_solutions(solutionList, board);
+  print_board(board);
 }
