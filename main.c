@@ -32,7 +32,7 @@ int solve(ColumnObj* header, SolutionList* solutionList);
 void print_solutions(SolutionList* solutionList);
 void add_solution(SolutionList** solutionList, DataObj* obj);
 void run_example_set_cover(void);
-ColumnObj* init_sudoku_columns(void);
+ColumnObj* init_sudoku_columns(char* board);
 DataObj* add_spacer(DataObj** arena, DataObj* up, DataObj* down);
 
 void run_example_set_cover() {
@@ -102,7 +102,9 @@ void run_example_set_cover() {
 #define GET_C_COL(j, k) (header + 1 + 162 + ((j) * 9) + (k) - 1)
 #define GET_B_COL(x, k) (header + 1 + 243 + ((x) * 9) + (k) - 1)
 
-ColumnObj* init_sudoku_columns() {
+// Board is a 9x9 = 81 length array. If a block is 0, it is not filled in
+// otherwise it is
+ColumnObj* init_sudoku_columns(char* board) {
   ColumnObj* colArena = malloc(sizeof(ColumnObj) * 325);
   ColumnObj* header = colArena;
   header->name = "Header";
@@ -150,17 +152,26 @@ ColumnObj* init_sudoku_columns() {
   DataObj* prevRow = NULL;
   for (char i = 0; i < 9; i++) {
     for (char j = 0; j < 9; j++) {
-      for (char k = 1; k < 10; k++) {
-	char x = 3 * (i / 3) + (j / 3);
+      char x = 3 * (i / 3) + (j / 3);
+      if (board[(i * 9) + j] != 0) {
+	char k = board[(i * 9) + j];
 	add_spacer(&nodeArena, prevRow, nodeArena + 4);
 	prevRow = add_data_obj(&nodeArena, GET_P_COL(i, j)); // p_ij
 	add_data_obj(&nodeArena, GET_R_COL(i, k)); // r_ik
 	add_data_obj(&nodeArena, GET_C_COL(j, k)); // c_jk
 	add_data_obj(&nodeArena, GET_B_COL(x, k));
+      } else {
+	for (char k = 1; k < 10; k++) {
+	  add_spacer(&nodeArena, prevRow, nodeArena + 4);
+	  prevRow = add_data_obj(&nodeArena, GET_P_COL(i, j)); // p_ij
+	  add_data_obj(&nodeArena, GET_R_COL(i, k)); // r_ik
+	  add_data_obj(&nodeArena, GET_C_COL(j, k)); // c_jk
+	  add_data_obj(&nodeArena, GET_B_COL(x, k));
+	}
       }
     }
   }
-  DataObj* spacer = add_spacer(&nodeArena, prevRow, NULL);
+  add_spacer(&nodeArena, prevRow, NULL);
   return header;
 }
 
@@ -366,6 +377,9 @@ int solve(ColumnObj* header, SolutionList* solutionList) {
 }
 
 int main() {
-  ColumnObj* header = init_sudoku_columns();
+  //run_example_set_cover();
+  char* board = calloc(81, sizeof(char));
+  board[0] = 5;
+  ColumnObj* header = init_sudoku_columns(board);
   solve(header, NULL);
 }
