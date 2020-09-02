@@ -1,3 +1,11 @@
+type wasm_module = {
+  name: string
+};
+type js_module = {
+  default: unit => wasm_module
+};
+[@bs.module "./sudokuLoader"] external factory: Js.Promise.t(js_module) = "default";
+
 module Styles = {
   open Css;
   let app =
@@ -20,72 +28,83 @@ module Styles = {
 type tile =
  | Empty
  | Valid(int)
- | Invalid(int);
+ | Invalid(option(int));
 
+let checkEntry = (mapArray, index, value) => {
+  switch (mapArray[index]) {
+          | Some(map) => {
+            if (1 lsl value land map != 0) {
+              mapArray[index] = None;
+            } else {
+              mapArray[index] = Some(map lor 1 lsl value);
+            };
+          }
+          | None => ()
+        }
+};
+
+let makeInvalid = tile => {
+ switch (tile) {
+   | Empty => Invalid(None)
+   | Valid(i) => Invalid(Some(i))
+   | Invalid(_) => tile
+ }
+}
+
+let makeValid = tile => {
+ switch (tile) {
+   | Empty => Empty
+   | Valid(i) => Valid(i)
+   | Invalid(i) => Belt.Option.mapWithDefault(i, Empty, i => Valid(i))
+ }
+}
 
 // We only need to check the row/col/box of the new index
-let validateBoard = board => {
-  let colMaps = Array.make(9, 0);
-  let rowMaps = Array.make(9, 0);
-  let squareMaps = Array.make(9, 0);
+let validateBoard = (board: array(tile)) => {
+  let colMaps = Array.make(9, Some(0));
+  let rowMaps = Array.make(9, Some(0));
+  let squareMaps = Array.make(9, Some(0));
   for (i in 0 to 80) {
     let col = i mod 9;
     let row = i / 9;
     let square = 3 * (row / 3) + col / 3;
     switch (board[i]) {
-    | Valid(value) =>
-      if (1 lsl value land colMaps[col] != 0) {
-        for (i in 0 to 8) {
-          switch (board[i * 9 + col]) {
-            | Valid(v) => {
-              board[i * 9 + col] = Invalid(v);
-            }
-            | Empty => ()
-            | Invalid(_) => ()
-          };
-        }
-      } else {
-        colMaps[col] = colMaps[col] lor 1 lsl value;
-      };
-      if (1 lsl value land rowMaps[row] != 0) {
-        for (i in 0 to 8) {
-          switch (board[row * 9 + i]) {
-            | Valid(v) => {
-              board[row * 9 + i] = Invalid(v);
-            }
-            | Empty => ()
-            | Invalid(_) => ()
-          }
-        }
-      } else {
-        rowMaps[row] = rowMaps[row] lor 1 lsl value;
-      };
-      if (1 lsl value land squareMaps[square] != 0) {
-        for (i in 0 to 80) {
-          let col = i mod 9;
-          let row = i / 9;
-          if (square == 3 * (row/3) + col/3) {
-            switch (board[i]) {
-              | Valid(v) => {
-                board[i] = Invalid(v)
-              }
-              | Empty => ()
-              | Invalid(_) => ()
-            }
-          }
-        }
-      } else {
-        squareMaps[square] = squareMaps[square] lor 1 lsl value;
-      };
+    | Valid(value) => {
+      checkEntry(colMaps, col, value);
+      checkEntry(rowMaps, row, value);
+      checkEntry(squareMaps, square, value);
+    }
     | Empty => ()
     | Invalid(_) => ()
     };
   };
+  for (i in 0 to 80) {
+    let col = i mod 9;
+    let row = i / 9;
+    let square = 3 * (row / 3) + col / 3;
+    let isValid = Belt.Option.isSome(colMaps[col])
+      && Belt.Option.isSome(rowMaps[row])
+      && Belt.Option.isSome(squareMaps[square]);
+    if (isValid) {
+        board[i] = makeValid(board[i]);
+    } else {
+        board[i] = makeInvalid(board[i]);
+    }
+  }
   board
 };
 
 [@react.component]
 let make = () => {
+  React.useEffect1(() => {
+     factory
+     |> Js.Promise.then_(res => {
+       Js.log(res.default());
+       Js.Promise.resolve(0)
+     })
+     |> ignore;
+     None
+  }, [||])
   let (board, setBoard) = React.useState(() => Array.make(81, Empty));
   let handleChange = (i, event) => {
     ReactEvent.Form.persist(event);
@@ -94,7 +113,7 @@ let make = () => {
         ReactEvent.Form.target(event)##value
         ->int_of_string_opt
         ->Belt.Option.mapWithDefault(Empty, i => i < 10 && i > 0 ? Valid(i) : Empty);
-       validateBoard(board)
+       Array.map(i => i, validateBoard(board))
     });
   };
   <div className=Styles.app>
@@ -104,7 +123,7 @@ let make = () => {
          Array.mapi(
            (i, value) =>
              switch (value) {
-               | Invalid(value) => <Tile handleChange=handleChange(i) isValid=false value=string_of_int(value) />
+               | Invalid(value) => <Tile handleChange=handleChange(i) isValid=false value=Belt.Option.mapWithDefault(value, "", string_of_int) />
                | Valid(value) => <Tile handleChange=handleChange(i) isValid=true value=string_of_int(value) />
                | Empty => <Tile handleChange=handleChange(i) isValid=true value="" />
              },

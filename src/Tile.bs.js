@@ -1,8 +1,8 @@
-'use strict';
 
-var Css = require("bs-css-emotion/src/Css.js");
-var Curry = require("bs-platform/lib/js/curry.js");
-var React = require("react");
+
+import * as Css from "bs-css-emotion/src/Css.js";
+import * as Curry from "bs-platform/lib/es6/curry.js";
+import * as React from "react";
 
 function tile(isValid) {
   return Curry._1(Css.style, {
@@ -54,6 +54,9 @@ function Tile(Props) {
 
 var make = Tile;
 
-exports.Styles = Styles;
-exports.make = make;
+export {
+  Styles ,
+  make ,
+  
+}
 /* Css Not a pure module */

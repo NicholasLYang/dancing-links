@@ -6,7 +6,8 @@
     "start": "bsb -make-world -w -ws _ ",
     "clean": "bsb -clean-world",
     "server": "moduleserve ./ --port 8000",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"bsb -make-world -w\" \"npx webpack-dev-server -w\" "
   },
   "keywords": [
     "BuckleScript",
@@ -17,12 +18,18 @@
   "license": "MIT",
   "dependencies": {
     "bs-css-emotion": "^2.0.0",
+    "concurrently": "^5.3.0",
+    "html-webpack-plugin": "^4.4.1",
+    "path-browserify": "^1.0.1",
     "react": "^16.8.1",
     "react-dom": "^16.8.1",
-    "reason-react": ">=0.7.1"
+    "reason-react": ">=0.7.1",
+    "webpack": "^5.0.0-beta.29",
+    "webpack-dev-server": "^3.11.0"
   },
   "devDependencies": {
     "bs-platform": "^8.2.0",
-    "moduleserve": "^0.9.0"
+    "moduleserve": "^0.9.0",
+    "webpack-cli": "^3.3.12"
   }
 }

@@ -10,3 +10,4 @@ lib
 node_modules/
 .merlin
 !/src/Index.re
+.DS_Store

@@ -1,13 +1,16 @@
-'use strict';
 
-var Css = require("bs-css-emotion/src/Css.js");
-var $$Array = require("bs-platform/lib/js/array.js");
-var Curry = require("bs-platform/lib/js/curry.js");
-var React = require("react");
-var Caml_array = require("bs-platform/lib/js/caml_array.js");
-var Pervasives = require("bs-platform/lib/js/pervasives.js");
-var Belt_Option = require("bs-platform/lib/js/belt_Option.js");
-var Tile$DancingLinks = require("./Tile.bs.js");
+
+import * as Css from "bs-css-emotion/src/Css.js";
+import * as $$Array from "bs-platform/lib/es6/array.js";
+import * as Curry from "bs-platform/lib/es6/curry.js";
+import * as React from "react";
+import * as Caml_array from "bs-platform/lib/es6/caml_array.js";
+import * as Pervasives from "bs-platform/lib/es6/pervasives.js";
+import * as Belt_Option from "bs-platform/lib/es6/belt_Option.js";
+import * as SudokuLoader from "./sudokuLoader";
+import * as Tile$DancingLinks from "./Tile.bs.js";
+
+var factory = SudokuLoader.default;
 
 var app = Curry._1(Css.style, {
       hd: Css.display("flex"),
@@ -48,6 +51,52 @@ var Styles = {
   board: board
 };
 
+function checkEntry(mapArray, index, value) {
+  var map = Caml_array.caml_array_get(mapArray, index);
+  if (map !== undefined) {
+    if (((1 << value) & map) !== 0) {
+      return Caml_array.caml_array_set(mapArray, index, undefined);
+    } else {
+      return Caml_array.caml_array_set(mapArray, index, map | (1 << value));
+    }
+  }
+  
+}
+
+function makeInvalid(tile) {
+  if (typeof tile === "number") {
+    return {
+            TAG: /* Invalid */1,
+            _0: undefined
+          };
+  } else if (tile.TAG) {
+    return tile;
+  } else {
+    return {
+            TAG: /* Invalid */1,
+            _0: tile._0
+          };
+  }
+}
+
+function makeValid(tile) {
+  if (typeof tile === "number") {
+    return /* Empty */0;
+  } else if (tile.TAG) {
+    return Belt_Option.mapWithDefault(tile._0, /* Empty */0, (function (i) {
+                  return {
+                          TAG: /* Valid */0,
+                          _0: i
+                        };
+                }));
+  } else {
+    return {
+            TAG: /* Valid */0,
+            _0: tile._0
+          };
+  }
+}
+
 function validateBoard(board) {
   var colMaps = Caml_array.caml_make_vect(9, 0);
   var rowMaps = Caml_array.caml_make_vect(9, 0);
@@ -59,60 +108,34 @@ function validateBoard(board) {
     var value = Caml_array.caml_array_get(board, i);
     if (typeof value !== "number" && !value.TAG) {
       var value$1 = value._0;
-      if (((1 << value$1) & Caml_array.caml_array_get(colMaps, col)) !== 0) {
-        for(var i$1 = 0; i$1 <= 8; ++i$1){
-          var v = Caml_array.caml_array_get(board, Math.imul(i$1, 9) + col | 0);
-          if (typeof v !== "number" && !v.TAG) {
-            Caml_array.caml_array_set(board, Math.imul(i$1, 9) + col | 0, {
-                  TAG: /* Invalid */1,
-                  _0: v._0
-                });
-          }
-          
-        }
-      } else {
-        Caml_array.caml_array_set(colMaps, col, Caml_array.caml_array_get(colMaps, col) | (1 << value$1));
-      }
-      if (((1 << value$1) & Caml_array.caml_array_get(rowMaps, row)) !== 0) {
-        for(var i$2 = 0; i$2 <= 8; ++i$2){
-          var v$1 = Caml_array.caml_array_get(board, Math.imul(row, 9) + i$2 | 0);
-          if (typeof v$1 !== "number" && !v$1.TAG) {
-            Caml_array.caml_array_set(board, Math.imul(row, 9) + i$2 | 0, {
-                  TAG: /* Invalid */1,
-                  _0: v$1._0
-                });
-          }
-          
-        }
-      } else {
-        Caml_array.caml_array_set(rowMaps, row, Caml_array.caml_array_get(rowMaps, row) | (1 << value$1));
-      }
-      if (((1 << value$1) & Caml_array.caml_array_get(squareMaps, square)) !== 0) {
-        for(var i$3 = 0; i$3 <= 80; ++i$3){
-          var col$1 = i$3 % 9;
-          var row$1 = i$3 / 9 | 0;
-          if (square === (Math.imul(3, row$1 / 3 | 0) + (col$1 / 3 | 0) | 0)) {
-            var v$2 = Caml_array.caml_array_get(board, i$3);
-            if (typeof v$2 !== "number" && !v$2.TAG) {
-              Caml_array.caml_array_set(board, i$3, {
-                    TAG: /* Invalid */1,
-                    _0: v$2._0
-                  });
-            }
-            
-          }
-          
-        }
-      } else {
-        Caml_array.caml_array_set(squareMaps, square, Caml_array.caml_array_get(squareMaps, square) | (1 << value$1));
-      }
+      checkEntry(colMaps, col, value$1);
+      checkEntry(rowMaps, row, value$1);
+      checkEntry(squareMaps, square, value$1);
     }
     
+  }
+  for(var i$1 = 0; i$1 <= 80; ++i$1){
+    var col$1 = i$1 % 9;
+    var row$1 = i$1 / 9 | 0;
+    var square$1 = Math.imul(3, row$1 / 3 | 0) + (col$1 / 3 | 0) | 0;
+    var isValid = Belt_Option.isSome(Caml_array.caml_array_get(colMaps, col$1)) && Belt_Option.isSome(Caml_array.caml_array_get(rowMaps, row$1)) && Belt_Option.isSome(Caml_array.caml_array_get(squareMaps, square$1));
+    if (isValid) {
+      Caml_array.caml_array_set(board, i$1, makeValid(Caml_array.caml_array_get(board, i$1)));
+    } else {
+      Caml_array.caml_array_set(board, i$1, makeInvalid(Caml_array.caml_array_get(board, i$1)));
+    }
   }
   return board;
 }
 
 function App(Props) {
+  React.useEffect((function () {
+          factory.then(function (res) {
+                console.log(Curry._1(res.default, undefined));
+                return Promise.resolve(0);
+              });
+          
+        }), []);
   var match = React.useState(function () {
         return Caml_array.caml_make_vect(81, /* Empty */0);
       });
@@ -130,7 +153,9 @@ function App(Props) {
                                 return /* Empty */0;
                               }
                             })));
-                  return validateBoard(board);
+                  return $$Array.map((function (i) {
+                                return i;
+                              }), validateBoard(board));
                 }));
   };
   return React.createElement("div", {
@@ -148,7 +173,9 @@ function App(Props) {
                                     });
                         } else if (value.TAG) {
                           return React.createElement(Tile$DancingLinks.make, {
-                                      value: String(value._0),
+                                      value: Belt_Option.mapWithDefault(value._0, "", (function (prim) {
+                                              return String(prim);
+                                            })),
                                       isValid: false,
                                       handleChange: (function (param) {
                                           return handleChange(i, param);
@@ -168,7 +195,14 @@ function App(Props) {
 
 var make = App;
 
-exports.Styles = Styles;
-exports.validateBoard = validateBoard;
-exports.make = make;
-/* app Not a pure module */
+export {
+  factory ,
+  Styles ,
+  checkEntry ,
+  makeInvalid ,
+  makeValid ,
+  validateBoard ,
+  make ,
+  
+}
+/* factory Not a pure module */

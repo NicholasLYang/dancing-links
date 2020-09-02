@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <emscripten/emscripten.h>
 
 typedef struct DataObj {
   struct DataObj* up;
@@ -105,9 +105,12 @@ void run_example_set_cover() {
 #define GET_C_COL(j, k) (header + 1 + 162 + ((j) * 9) + (k) - 1)
 #define GET_B_COL(x, k) (header + 1 + 243 + ((x) * 9) + (k) - 1)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 // Board is a 9x9 = 81 length array. If a block is 0, it is not filled in
 // otherwise it is
-ColumnObj* init_sudoku_links(char* board) {
+ColumnObj* EMSCRIPTEN_KEEPALIVE init_sudoku_links(char* board) {
   ColumnObj* colArena = calloc(325, sizeof(ColumnObj));
   ColumnObj* header = colArena;
   header->name = "Header";
@@ -177,6 +180,62 @@ ColumnObj* init_sudoku_links(char* board) {
   add_spacer(&nodeArena, prevRow, NULL);
   return header;
 }
+
+// Solved = 1
+int EMSCRIPTEN_KEEPALIVE solve(ColumnObj* header, SolutionList** solutionList) {
+  if (header->right == header) {
+    return 1;
+  }
+  ColumnObj* col = header->right;
+  cover_column(col);
+  DataObj* row = col->dataObj.down;
+  while (row != (DataObj*)col) {
+    add_solution(solutionList, row);
+    DataObj* rowObj = row + 1;
+    while (rowObj != row) {
+      // If this is a spacer node
+      if ((int)rowObj->col & 1) {
+	// Go backwards to first elem in row
+	rowObj = rowObj->up;
+      }
+      if (rowObj == row) {
+	break;
+      }
+      cover_column(rowObj->col);
+      rowObj += 1;
+    }
+    if (solve(header, solutionList) == 1) {
+      return 1;
+    }
+    SolutionList* old_sol = *solutionList;
+    *solutionList = (*solutionList)->next;
+    free(old_sol);
+    rowObj = rowObj - 1;
+    while (rowObj != row) {
+      // If this is a spacer node
+      if ((int)rowObj->col & 1) {
+	// Go to last elem in row
+	rowObj = rowObj->down;
+      }
+      if (rowObj == row) {
+	break;
+      }
+      uncover_column(rowObj->col);
+      rowObj = rowObj - 1;
+    }
+    row = row->down;
+  }
+  uncover_column(col);
+  return 0;
+}
+
+void EMSCRIPTEN_KEEPALIVE test() {
+  printf("TESTING CALLING\n");
+}
+
+#ifdef __cplusplus
+}
+#endif
 
 /*
  * Adds a column obj. Assumes that there is a column obj to the left
@@ -375,60 +434,13 @@ void write_solutions(SolutionList* solutionList, char* board) {
   }
 }
 
-// Solved = 1
-int solve(ColumnObj* header, SolutionList** solutionList) {
-  if (header->right == header) {
-    return 1;
-  }
-  ColumnObj* col = header->right;
-  cover_column(col);
-  DataObj* row = col->dataObj.down;
-  while (row != (DataObj*)col) {
-    add_solution(solutionList, row);
-    DataObj* rowObj = row + 1;
-    while (rowObj != row) {
-      // If this is a spacer node
-      if ((int)rowObj->col & 1) {
-	// Go backwards to first elem in row
-	rowObj = rowObj->up;
-      }
-      if (rowObj == row) {
-	break;
-      }
-      cover_column(rowObj->col);
-      rowObj += 1;
-    }
-    if (solve(header, solutionList) == 1) {
-      return 1;
-    }
-    SolutionList* old_sol = *solutionList;
-    *solutionList = (*solutionList)->next;
-    free(old_sol);
-    rowObj = rowObj - 1;
-    while (rowObj != row) {
-      // If this is a spacer node
-      if ((int)rowObj->col & 1) {
-	// Go to last elem in row
-	rowObj = rowObj->down;
-      }
-      if (rowObj == row) {
-	break;
-      }
-      uncover_column(rowObj->col);
-      rowObj = rowObj - 1;
-    }
-    row = row->down;
-  }
-  uncover_column(col);
-  return 0;
-}
-
 int main() {
-  char* board = calloc(81, sizeof(char));
+/*  char* board = calloc(81, sizeof(char));
   board[0] = 5;
   ColumnObj* header = init_sudoku_links(board);
   SolutionList* solutionList;
   solve(header, &solutionList);
   write_solutions(solutionList, board);
-  print_board(board);
+  print_board(board);*/
+  printf("Hello world!\n");
 }
