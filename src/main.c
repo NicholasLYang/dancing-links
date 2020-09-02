@@ -36,6 +36,8 @@ void add_solution(SolutionList** solutionList, DataObj* obj);
 ColumnObj* init_sudoku_links(char* board);
 DataObj* add_spacer(DataObj** arena, DataObj* up, DataObj* down);
 void run_example_set_cover(void);
+void test(void);
+char* solve_sudoku(char* board);
 
 void run_example_set_cover() {
   ColumnObj* colArena = calloc(8, sizeof(ColumnObj));
@@ -105,9 +107,6 @@ void run_example_set_cover() {
 #define GET_C_COL(j, k) (header + 1 + 162 + ((j) * 9) + (k) - 1)
 #define GET_B_COL(x, k) (header + 1 + 243 + ((x) * 9) + (k) - 1)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 // Board is a 9x9 = 81 length array. If a block is 0, it is not filled in
 // otherwise it is
 ColumnObj* EMSCRIPTEN_KEEPALIVE init_sudoku_links(char* board) {
@@ -232,10 +231,6 @@ int EMSCRIPTEN_KEEPALIVE solve(ColumnObj* header, SolutionList** solutionList) {
 void EMSCRIPTEN_KEEPALIVE test() {
   printf("TESTING CALLING\n");
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 /*
  * Adds a column obj. Assumes that there is a column obj to the left
@@ -434,13 +429,18 @@ void write_solutions(SolutionList* solutionList, char* board) {
   }
 }
 
+char* EMSCRIPTEN_KEEPALIVE solve_sudoku(char* board) {
+printf("1\n");
+    ColumnObj* header = init_sudoku_links(board);
+    printf("2\n");
+    SolutionList* solutionList;
+    solve(header, &solutionList);
+    printf("3\n");
+    write_solutions(solutionList, board);
+    printf("4\n");
+    return board;
+}
+
 int main() {
-/*  char* board = calloc(81, sizeof(char));
-  board[0] = 5;
-  ColumnObj* header = init_sudoku_links(board);
-  SolutionList* solutionList;
-  solve(header, &solutionList);
-  write_solutions(solutionList, board);
-  print_board(board);*/
   printf("Hello world!\n");
 }

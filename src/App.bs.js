@@ -10,7 +10,10 @@ import * as Belt_Option from "bs-platform/lib/es6/belt_Option.js";
 import * as SudokuLoader from "./sudokuLoader";
 import * as Tile$DancingLinks from "./Tile.bs.js";
 
-var factory = SudokuLoader.default;
+function solve(prim) {
+  SudokuLoader.default(prim);
+  
+}
 
 var app = Curry._1(Css.style, {
       hd: Css.display("flex"),
@@ -130,10 +133,7 @@ function validateBoard(board) {
 
 function App(Props) {
   React.useEffect((function () {
-          factory.then(function (res) {
-                console.log(Curry._1(res.default, undefined));
-                return Promise.resolve(0);
-              });
+          SudokuLoader.default([1]);
           
         }), []);
   var match = React.useState(function () {
@@ -169,7 +169,8 @@ function App(Props) {
                                       isValid: true,
                                       handleChange: (function (param) {
                                           return handleChange(i, param);
-                                        })
+                                        }),
+                                      key: String(i)
                                     });
                         } else if (value.TAG) {
                           return React.createElement(Tile$DancingLinks.make, {
@@ -179,7 +180,8 @@ function App(Props) {
                                       isValid: false,
                                       handleChange: (function (param) {
                                           return handleChange(i, param);
-                                        })
+                                        }),
+                                      key: String(i)
                                     });
                         } else {
                           return React.createElement(Tile$DancingLinks.make, {
@@ -187,7 +189,8 @@ function App(Props) {
                                       isValid: true,
                                       handleChange: (function (param) {
                                           return handleChange(i, param);
-                                        })
+                                        }),
+                                      key: String(i)
                                     });
                         }
                       }), match[0])));
@@ -196,7 +199,7 @@ function App(Props) {
 var make = App;
 
 export {
-  factory ,
+  solve ,
   Styles ,
   checkEntry ,
   makeInvalid ,
@@ -205,4 +208,4 @@ export {
   make ,
   
 }
-/* factory Not a pure module */
+/* app Not a pure module */

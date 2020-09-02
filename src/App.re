@@ -1,10 +1,4 @@
-type wasm_module = {
-  name: string
-};
-type js_module = {
-  default: unit => wasm_module
-};
-[@bs.module "./sudokuLoader"] external factory: Js.Promise.t(js_module) = "default";
+[@bs.module "./sudokuLoader"] external solve: array(int) => unit = "default";
 
 module Styles = {
   open Css;
@@ -97,12 +91,7 @@ let validateBoard = (board: array(tile)) => {
 [@react.component]
 let make = () => {
   React.useEffect1(() => {
-     factory
-     |> Js.Promise.then_(res => {
-       Js.log(res.default());
-       Js.Promise.resolve(0)
-     })
-     |> ignore;
+     solve([|1|])
      None
   }, [||])
   let (board, setBoard) = React.useState(() => Array.make(81, Empty));
@@ -123,9 +112,9 @@ let make = () => {
          Array.mapi(
            (i, value) =>
              switch (value) {
-               | Invalid(value) => <Tile handleChange=handleChange(i) isValid=false value=Belt.Option.mapWithDefault(value, "", string_of_int) />
-               | Valid(value) => <Tile handleChange=handleChange(i) isValid=true value=string_of_int(value) />
-               | Empty => <Tile handleChange=handleChange(i) isValid=true value="" />
+               | Invalid(value) => <Tile key=string_of_int(i) handleChange=handleChange(i) isValid=false value=Belt.Option.mapWithDefault(value, "", string_of_int) />
+               | Valid(value) => <Tile key=string_of_int(i) handleChange=handleChange(i) isValid=true value=string_of_int(value) />
+               | Empty => <Tile key=string_of_int(i) handleChange=handleChange(i) isValid=true value="" />
              },
            board,
          ),
